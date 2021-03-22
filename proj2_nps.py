@@ -196,14 +196,30 @@ def get_nearby_places(site_object):
     save_cache(cache_dict)
     return data
 
+
 def print_nearby_places(place_list):
+    '''Print out the nearby places from MapQuest API.
+
+    Parameters
+    ----------
+    dict
+        a converted API return from MapQuest API
+
+    Returns
+    -------
+    None
+    '''
     for place in place_list['searchResults']:
         output = "- "
         output += place['name'] + " ("
-        output += place['fields']['group_sic_code_name'] if len(place['fields']['group_sic_code_name']) > 0 else "no category"
-        output += "): " + (place['fields']['address'] if len(place['fields']['address']) > 0 else "no address")
-        output += ", " + (place['fields']['city'] if len(place['fields']['city']) > 0 else "no city")
-        print (output)
+        output += place['fields']['group_sic_code_name'] if len(
+            place['fields']['group_sic_code_name']) > 0 else "no category"
+        output += "): " + (place['fields']['address']
+                           if len(place['fields']['address']) > 0 else "no address")
+        output += ", " + \
+            (place['fields']['city'] if len(
+                place['fields']['city']) > 0 else "no city")
+        print(output)
     return
 
 
@@ -249,6 +265,16 @@ def save_cache(cache_dict):
 
 
 def main():
+    ''' Interactive search interface
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
+    '''
     invalid_str = "[Error] Invalid input"
     state_url_dict = build_state_url_dict()
     while True:
@@ -263,15 +289,16 @@ def main():
         else:
             site_list = get_sites_for_state(state_url_dict[state_name])
             prompt = "List of national sites in " + state_name
-            print ('-'*len(prompt))
-            print (prompt)
-            print ('-'*len(prompt))
+            print('-' * len(prompt))
+            print(prompt)
+            print('-' * len(prompt))
             for i in range(0, len(site_list)):
                 print(f'[{str(i+1)}] ' + site_list[i].info())
 
             while True:
-                print ('-'*35)
-                site_num = input('Choose the number for detail search or "exit" or "back": ')
+                print('-' * 35)
+                site_num = input(
+                    'Choose the number for detail search or "exit" or "back": ')
                 if site_num == "exit":
                     return
                 elif site_num == "back":
@@ -279,24 +306,25 @@ def main():
                 elif site_num.isnumeric():
                     try:
                         current_index = int(site_num) - 1
-                        if current_index < 0 or current_index >= len(site_list):
-                            print (invalid_str)
+                        if current_index < 0 or current_index >= len(
+                                site_list):
+                            print(invalid_str)
                             continue
                         else:
                             current_site = site_list[current_index]
                             place_list = get_nearby_places(current_site)
                             prompt = "Places near " + current_site.name
-                            print ('-'*len(prompt))
-                            print (prompt)
-                            print ('-'*len(prompt))
+                            print('-' * len(prompt))
+                            print(prompt)
+                            print('-' * len(prompt))
                             print_nearby_places(place_list)
                             continue
                     except ValueError:
-                        print (invalid_str)
+                        print(invalid_str)
                         continue
                 else:
-                    print (invalid_str)
-                    continue            
+                    print(invalid_str)
+                    continue
 
 
 if __name__ == "__main__":
