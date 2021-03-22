@@ -10,6 +10,8 @@ import secrets  # file that contains your API key
 
 CACHE_FILENAME = 'nps_cache.json'
 URL = "https://www.nps.gov"
+API_KEY = secrets.API_KEY
+API_URL = "http://www.mapquestapi.com/search/v2/radius"
 
 
 class NationalSite:
@@ -174,7 +176,35 @@ def get_nearby_places(site_object):
     dict
         a converted API return from MapQuest API
     '''
-    pass
+    cache_dict = open_cache()
+    if cache_dict and site_object.zipcode in cache_dict:
+        print('Using Cache')
+        return cache_dict[site_object.zipcode]
+
+    print('Fetching')
+    params = {
+        'key': API_KEY,
+        'origin': site_object.zipcode,
+        'radius': 10,
+        'maxMatches': 10,
+        'ambiguities': "ignore",
+        "outFormat": "json"
+    }
+    response = requests.get(API_URL, params=params)
+    data = json.loads(response.text)
+    cache_dict[site_object.zipcode] = data
+    save_cache(cache_dict)
+    return data
+
+def print_nearby_places(place_list):
+    for place in place_list['searchResults']:
+        output = "- "
+        output += place['name'] + " ("
+        output += place['fields']['group_sic_code_name'] if len(place['fields']['group_sic_code_name']) > 0 else "no category"
+        output += "): " + (place['fields']['address'] if len(place['fields']['address']) > 0 else "no address")
+        output += ", " + (place['fields']['city'] if len(place['fields']['city']) > 0 else "no city")
+        print (output)
+    return
 
 
 def open_cache():
@@ -219,19 +249,54 @@ def save_cache(cache_dict):
 
 
 def main():
+    invalid_str = "[Error] Invalid input"
     state_url_dict = build_state_url_dict()
-    state_name = input(
-        'Enter a state name (e.g. Michigan, michigan) or "exit": ')
-    state_name = state_name.lower()
-    if state_name == 'exit':
-        return
-    elif state_name not in state_url_dict:
-        print('[Error] Enter proper state name')
-        return
-    else:
-        site_list = get_sites_for_state(state_url_dict[state_name])
-        for i in range(0, len(site_list)):
-            print(f'[{str(i+1)}] ' + site_list[i].info())
+    while True:
+        state_name = input(
+            'Enter a state name (e.g. Michigan, michigan) or "exit": ')
+        state_name = state_name.lower()
+        if state_name == 'exit':
+            return
+        elif state_name not in state_url_dict:
+            print('[Error] Enter proper state name\n')
+            continue
+        else:
+            site_list = get_sites_for_state(state_url_dict[state_name])
+            prompt = "List of national sites in " + state_name
+            print ('-'*len(prompt))
+            print (prompt)
+            print ('-'*len(prompt))
+            for i in range(0, len(site_list)):
+                print(f'[{str(i+1)}] ' + site_list[i].info())
+
+            while True:
+                print ('-'*35)
+                site_num = input('Choose the number for detail search or "exit" or "back": ')
+                if site_num == "exit":
+                    return
+                elif site_num == "back":
+                    break
+                elif site_num.isnumeric():
+                    try:
+                        current_index = int(site_num) - 1
+                        if current_index < 0 or current_index >= len(site_list):
+                            print (invalid_str)
+                            continue
+                        else:
+                            current_site = site_list[current_index]
+                            place_list = get_nearby_places(current_site)
+                            prompt = "Places near " + current_site.name
+                            print ('-'*len(prompt))
+                            print (prompt)
+                            print ('-'*len(prompt))
+                            print_nearby_places(place_list)
+                            continue
+                    except ValueError:
+                        print (invalid_str)
+                        continue
+                else:
+                    print (invalid_str)
+                    continue            
 
 
 if __name__ == "__main__":
