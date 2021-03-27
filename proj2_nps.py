@@ -111,6 +111,8 @@ def get_site_instance(site_url):
     cache['category'] = soup.find(
         class_='Hero-designation').text.strip() if soup.find(
         class_='Hero-designation') else 'No Category'
+    if len(cache['category']) == 0:
+        cache['category'] = 'No Category'
     if soup.find(itemprop='addressLocality') and soup.find(
             itemprop='addressRegion'):
         cache['address'] = soup.find(itemprop='addressLocality').text.strip(
@@ -176,6 +178,9 @@ def get_nearby_places(site_object):
     dict
         a converted API return from MapQuest API
     '''
+    if site_object.zipcode == "No Zipcode":
+        return {}
+
     cache_dict = open_cache()
     if cache_dict and site_object.zipcode in cache_dict:
         print('Using Cache')
@@ -313,6 +318,9 @@ def main():
                         else:
                             current_site = site_list[current_index]
                             place_list = get_nearby_places(current_site)
+                            if not place_list:
+                                print('[Error] No address for this place\n')
+                                continue
                             prompt = "Places near " + current_site.name
                             print('-' * len(prompt))
                             print(prompt)
